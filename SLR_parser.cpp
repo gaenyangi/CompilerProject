@@ -524,6 +524,38 @@ public:
         initializeTables();
     }
 
+    // Function to print the contents of the stack
+    void printStack(const stack<int>& states, const stack<TreeNode*>& parseStack) {
+        stack<int> tempStates = states;
+        stack<TreeNode*> tempParseStack = parseStack;
+
+        vector<int> statesVec;
+        vector<string> parseVec;
+
+        while (!tempStates.empty()) {
+            statesVec.push_back(tempStates.top());
+            tempStates.pop();
+        }
+
+        while (!tempParseStack.empty()) {
+            parseVec.push_back(tempParseStack.top()->symbol);
+            tempParseStack.pop();
+        }
+
+        cout << "States stack: ";
+        for (auto it = statesVec.rbegin(); it != statesVec.rend(); ++it) {
+            cout << *it << " ";
+        }
+        cout << endl;
+
+        cout << "Parse stack: ";
+        for (auto it = parseVec.rbegin(); it != parseVec.rend(); ++it) {
+            cout << *it << " ";
+        }
+        cout << endl;
+    }
+
+    // In the parse function, call printStack at key points
     bool parse(const vector<string>& tokens, string& output, TreeNode*& parseTree) {
         stack<int> states;
         stack<TreeNode*> parseStack;
@@ -536,6 +568,7 @@ public:
 
             // Log current state and token
             cout << "State: " << state << ", Token: " << token << endl;
+            printStack(states, parseStack); // Print stack contents
 
             if (ACTION[state].find(token) == ACTION[state].end()) {
                 output = "Error: Unexpected token '" + token + "' at position " + to_string(pos) + "\n";
@@ -566,6 +599,7 @@ public:
                     cout << sym << " ";
                 }
                 cout << endl;
+                printStack(states, parseStack); // Print stack contents
 
                 if (GOTO[state].find(production.first) == GOTO[state].end()) {
                     output = "Error: No GOTO for production '" + production.first + "' from state " + to_string(state) + "\n";
