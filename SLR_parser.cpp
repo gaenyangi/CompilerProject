@@ -16,7 +16,14 @@ struct Action {
     int production; // For REDUCE, this is the production number
 };
 
-// Define the CFG productions
+// Define a structure to represent a node in the parse tree
+struct TreeNode {
+    string symbol;
+    vector<TreeNode*> children;
+
+    TreeNode(const string& sym) : symbol(sym) {}
+};
+
 vector<pair<string, vector<string>>> productions = {
     {"S'", {"CODE"}},
     {"CODE", {"VDECL", "CODE"}},
@@ -201,8 +208,8 @@ void initializeTables() {
 
     ACTION[39]["vtype"] = { ActionType::SHIFT, 45 };
     ACTION[39]["id"] = { ActionType::SHIFT, 46 };
-    ACTION[39]["literal"] = { ActionType::SHIFT, 44 };
-    ACTION[39]["character"] = { ActionType::SHIFT, 47 };
+    ACTION[39]["while"] = { ActionType::SHIFT, 44 };
+    ACTION[39]["if"] = { ActionType::SHIFT, 47 };
     ACTION[39]["rbrace"] = { ActionType::REDUCE, 0, 26 };
     ACTION[39]["return"] = { ActionType::REDUCE, 0, 26 };
 
@@ -472,12 +479,29 @@ void initializeTables() {
     GOTO[83]["IFELSE"] = 43;
 }
 
+void printTree(TreeNode* node, int depth = 0) {
+    for (int i = 0; i < depth; ++i) {
+        cout << "  ";
+    }
+    cout << node->symbol << "\n";
+    for (auto child : node->children) {
+        printTree(child, depth + 1);
+    }
+}
 
+void writeTreeToFile(TreeNode* node, ofstream& outfile, int depth = 0) {
+    for (int i = 0; i < depth; ++i) {
+        outfile << "  ";
+    }
+    outfile << node->symbol << "\n";
+    for (auto child : node->children) {
+        writeTreeToFile(child, outfile, depth + 1);
+    }
+}
 
-
-bool parse(vector<string> tokens, string& output) {
+bool parse(vector<string> tokens, string& output, TreeNode*& parseTree) {
     stack<int> states;
-    stack<string> symbols;
+    stack<TreeNode*> parseStack;
     states.push(0);
 
     int pos = 0;
@@ -493,20 +517,21 @@ bool parse(vector<string> tokens, string& output) {
         Action action = ACTION[state][token];
         if (action.type == ActionType::SHIFT) {
             states.push(action.state);
-            symbols.push(token);
+            parseStack.push(new TreeNode(token));
             pos++;
         }
         else if (action.type == ActionType::REDUCE) {
             const auto& production = productions[action.production];
             int pop_count = production.second.size();
+            TreeNode* node = new TreeNode(production.first);
             while (pop_count--) {
                 states.pop();
-                symbols.pop();
+                node->children.insert(node->children.begin(), parseStack.top());
+                parseStack.pop();
             }
-
             state = states.top();
             states.push(GOTO[state][production.first]);
-            symbols.push(production.first);
+            parseStack.push(node);
 
             // Append to parse tree output
             output += "Reduced using production: " + production.first + " -> ";
@@ -517,6 +542,9 @@ bool parse(vector<string> tokens, string& output) {
         }
         else if (action.type == ActionType::ACCEPT) {
             output += "Parsing successful!\n";
+            if (!parseStack.empty()) {
+                parseTree = parseStack.top();
+            }
             return true;
         }
         else {
@@ -557,9 +585,15 @@ int main(int argc, char* argv[]) {
 
     vector<string> tokens = readTokensFromFile(inputFilename);
     string output;
+    TreeNode* parseTree = nullptr;
 
-    if (parse(tokens, output)) {
-        writeOutputToFile(outputFilename, output);
+    if (parse(tokens, output, parseTree)) {
+        ofstream outfile(outputFilename);
+        outfile << output;
+        if (parseTree) {
+            writeTreeToFile(parseTree, outfile);
+        }
+        outfile.close();
     }
     else {
         writeOutputToFile(outputFilename, output);
