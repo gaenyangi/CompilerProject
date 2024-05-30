@@ -96,16 +96,16 @@ private:
             {"STMT", {"VDECL"}},
             {"STMT", {"ASSIGN", "semi"}},
             {"STMT", {"IF"}},
-            {"STMT", {"IFELSE"}},
+            {"STMT", {"IFELSE"}},//30
             {"STMT", {"while", "lparen", "COND", "rparen", "lbrace", "BLOCK", "rbrace"}},
             {"IF", {"if", "lparen", "COND", "rparen", "lbrace", "BLOCK", "rbrace"}},
             {"IFELSE", {"if", "lparen", "COND", "rparen", "lbrace", "BLOCK", "rbrace", "else", "lbrace", "BLOCK", "rbrace"}},
             {"COND", {"SIMPLECOND", "COND_TAIL"}},
-            {"SIMPLECOND", {"boolstr"}},
+            {"SIMPLECOND", {"boolstr"}},//35
             {"SIMPLECOND", {"lparen", "COND", "rparen"}},
             {"COND_TAIL", {"comp", "SIMPLECOND", "COND_TAIL"}},
             {"COND_TAIL", {""}},
-            {"RETURN", {"return", "RHS", "semi"}}
+            {"RETURN", {"return", "RHS", "semi"}} //39
         };
     }
 
@@ -198,7 +198,7 @@ private:
 
         ACTION[25]["lbrace"] = { ActionType::SHIFT, 32 };
 
-        ACTION[26]["$"] = { ActionType::REDUCE, 0, 24 };
+        ACTION[26]["rparen"] = { ActionType::REDUCE, 0, 24 };
         ACTION[26]["comma"] = { ActionType::SHIFT, 34 };
 
         ACTION[27]["semi"] = { ActionType::REDUCE, 0, 11 };
@@ -286,7 +286,7 @@ private:
         ACTION[48]["id"] = { ActionType::SHIFT, 58 };
 
         ACTION[49]["semi"] = { ActionType::REDUCE, 0, 12 };
-        ACTION[49]["rparen"] = { ActionType::REDUCE, 0, 15 };
+        ACTION[49]["rparen"] = { ActionType::REDUCE, 0, 12 };
 
         ACTION[50]["semi"] = { ActionType::REDUCE, 0, 15 };
         ACTION[50]["addsub"] = { ActionType::REDUCE, 0, 15 };
@@ -354,7 +354,7 @@ private:
 
         ACTION[71]["rparen"] = { ActionType::SHIFT, 75 };
 
-        ACTION[72]["rbrace"] = { ActionType::SHIFT, 76 };
+        ACTION[72]["lbrace"] = { ActionType::SHIFT, 76 };
 
         ACTION[73]["vtype"] = { ActionType::SHIFT, 45 };
         ACTION[73]["id"] = { ActionType::SHIFT, 46 };
@@ -463,11 +463,11 @@ private:
 
         GOTO[36]["TERM_TAIL"] = 50;
 
-        GOTO[46]["RETURN"] = 51;
+        GOTO[38]["RETURN"] = 51;
 
         GOTO[39]["VDECL"] = 40;
         GOTO[39]["ASSIGN"] = 41;
-        GOTO[39]["BLOCK"] = 38;
+        GOTO[39]["BLOCK"] = 53;
         GOTO[39]["STMT"] = 39;
         GOTO[39]["IF"] = 42;
         GOTO[39]["IFELSE"] = 43;
@@ -584,7 +584,12 @@ public:
             }
             else if (action.type == ActionType::REDUCE) {
                 const auto& production = productions[action.production];
-                int pop_count = production.second.size();
+                int pop_count=0;
+                if(production.second[0]==""){
+                    pop_count=0;
+                }else{
+                    pop_count = production.second.size();
+                }
                 TreeNode* node = new TreeNode(production.first);
                 while (pop_count--) {
                     states.pop();
@@ -600,7 +605,6 @@ public:
                 }
                 cout << endl;
                 printStack(states, parseStack); // Print stack contents
-
                 if (GOTO[state].find(production.first) == GOTO[state].end()) {
                     output = "Error: No GOTO for production '" + production.first + "' from state " + to_string(state) + "\n";
                     output += "Error: Unexpected token '" + token + "' at position " + to_string(pos) + "\n";
