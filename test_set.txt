@@ -1,0 +1,50 @@
+vtype id semi vtype id lparen rparen lbrace if lparen boolstr comp boolstr rparen lbrace rbrace : decline
+vtype id semi : accept
+vtype id lparen vtype id rparen lbrace vtype id semi return boolstr semi rbrace : accept
+vtype id assign id addsub id multdiv id semi : accept
+
+
+
+
+ARG → vtype id MOREARGS | ϵ
+: FDECL → vtype id lparen ARG rparen lbrace BLOCK RETURN rbrace
+
+CODE -> VDECL CODE
+CODE -> FDECL CODE
+CODE -> ''
+VDECL -> vtype id semi 
+VDECL -> vtype ASSIGN semi
+ASSIGN -> id assign RHS
+RHS -> EXPR 
+RHS -> literal 
+RHS -> character 
+RHS -> boolstr
+EXPR -> TERM EXPR_TAIL
+EXPR_TAIL -> addsub TERM EXPR_TAIL 
+EXPR_TAIL -> ''
+TERM -> FACTOR TERM_TAIL
+TERM_TAIL -> multdiv FACTOR TERM_TAIL 
+TERM_TAIL -> ''
+FACTOR -> lparen EXPR rparen 
+FACTOR -> id 
+FACTOR -> num
+FDECL -> vtype id lparen ARG rparen lbrace BLOCK RETURN rbrace
+ARG -> vtype id MOREARGS 
+ARG -> ''
+MOREARGS -> comma vtype id MOREARGS 
+MOREARGS -> ''
+BLOCK -> STMT BLOCK 
+BLOCK -> ''
+STMT -> VDECL 
+STMT -> ASSIGN semi
+STMT -> IF
+STMT -> IFELSE
+STMT -> while lparen COND rparen lbrace BLOCK rbrace
+IF -> if lparen COND rparen lbrace BLOCK rbrace
+IFELSE -> if lparen COND rparen lbrace BLOCK rbrace else lbrace BLOCK rbrace
+COND -> SIMPLECOND COND_TAIL
+SIMPLECOND -> boolstr 
+SIMPLECOND -> lparen COND rparen
+COND_TAIL -> comp SIMPLECOND COND_TAIL
+COND_TAIL -> ''
+RETURN -> return RHS semi
