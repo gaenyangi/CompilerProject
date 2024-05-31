@@ -8,7 +8,7 @@
 
 using namespace std;
 
-// Define a class to represent a parsing action
+// class to represent a parsing action
 enum class ActionType { SHIFT, REDUCE, ACCEPT, ERROR };
 
 class Action {
@@ -17,14 +17,15 @@ public:
     int state; // For SHIFT, this is the next state
     int production; // For REDUCE, this is the production number
 
-    // Default constructor
+    // Default constructor for removing bug
     Action() : type(ActionType::ERROR), state(-1), production(-1) {}
 
     Action(ActionType type, int state = -1, int production = -1)
         : type(type), state(state), production(production) {}
 };
 
-// Define a class to represent a node in the parse tree
+// class to represent a node in the parse tree
+// made for printing the result as parse tree
 class TreeNode {
 public:
     string symbol;
@@ -60,12 +61,13 @@ public:
 
 class Parser {
 private:
-    vector<pair<string, vector<string>>> productions;
-    map<int, map<string, Action>> ACTION;
-    map<int, map<string, int>> GOTO;
+    vector<pair<string, vector<string>>> productions; //storing CFG
+    map<int, map<string, Action>> ACTION; // storing ACTION table
+    map<int, map<string, int>> GOTO; // storing GOTO table
 
     void initializeProductions() {
         productions = {
+            //CFG
             {"S'", {"CODE"}},//0
             {"CODE", {"VDECL", "CODE"}},
             {"CODE", {"FDECL", "CODE"}},
@@ -110,6 +112,7 @@ private:
     }
 
     void initializeTables() {
+        //ACTION table
         ACTION[0]["vtype"] = { ActionType::SHIFT, 4 };
         ACTION[0]["$"] = { ActionType::REDUCE, 0, 3 };
 
@@ -415,7 +418,7 @@ private:
         ACTION[85]["if"] = { ActionType::REDUCE, 0, 33 };
         ACTION[85]["return"] = { ActionType::REDUCE, 0, 33 };
 
-        // Initialize GOTO table
+        //GOTO table
         GOTO[0]["CODE"] = 1;
         GOTO[0]["VDECL"] = 2;
         GOTO[0]["FDECL"] = 3;
@@ -524,7 +527,7 @@ public:
         initializeTables();
     }
 
-    // Function to print the contents of the stack
+    // function to print the contents of the stack in the form of parse tree
     void printStack(const stack<int>& states, const stack<TreeNode*>& parseStack) {
         stack<int> tempStates = states;
         stack<TreeNode*> tempParseStack = parseStack;
@@ -555,7 +558,13 @@ public:
         cout << endl;
     }
 
-    // In the parse function, call printStack at key points
+    // actual function that do the parsing
+    // it gets token sequence as input, compare them with table stored, and do parsing decision
+    // ACTION for push state & terminals
+    // REDUCE for reduce terminals into non-terminals
+    // ACCEPT for accept(finish the parsing)
+    // for each sequence, if there's any input that doesn't have table entries, it's error.
+    // in that case, reject the input sequence.
     bool parse(const vector<string>& tokens, string& output, TreeNode*& parseTree) {
         stack<int> states;
         stack<TreeNode*> parseStack;
@@ -566,9 +575,9 @@ public:
             int state = states.top();
             string token = (pos < tokens.size()) ? tokens[pos] : "$";
 
-            // Log current state and token
+            // debug log output in console window
             cout << "State: " << state << ", Token: " << token << endl;
-            printStack(states, parseStack); // Print stack contents
+            printStack(states, parseStack);
 
             if (ACTION[state].find(token) == ACTION[state].end()) {
                 output = "Error: Unexpected token '" + token + "' at position " + to_string(pos) + "\n";
@@ -598,13 +607,13 @@ public:
                 }
                 state = states.top();
 
-                // Log the production used for reduction
+                // debug log output in console window
                 cout << "Reducing using production: " << production.first << " -> ";
                 for (const auto& sym : production.second) {
                     cout << sym << " ";
                 }
                 cout << endl;
-                printStack(states, parseStack); // Print stack contents
+                printStack(states, parseStack);
                 if (GOTO[state].find(production.first) == GOTO[state].end()) {
                     output = "Error: No GOTO for production '" + production.first + "' from state " + to_string(state) + "\n";
                     output += "Error: Unexpected token '" + token + "' at position " + to_string(pos) + "\n";
@@ -626,9 +635,6 @@ public:
             }
         }
     }
-
-
-
 
 };
 
